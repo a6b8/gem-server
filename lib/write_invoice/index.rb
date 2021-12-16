@@ -10,9 +10,6 @@ require './lib/write_invoice/helpers.rb'
 
 
 class Invoice < Sinatra::Base
-    # set :bind, '0.0.0.0'
-    # set :port, '80'
-
     extend Helpers
 
     def initialize

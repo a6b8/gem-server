@@ -1,1 +1,1 @@
-web: bundle exex rackup
+web: bundle exec rackup
