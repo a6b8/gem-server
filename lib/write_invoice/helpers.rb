@@ -73,7 +73,7 @@ module Helpers
                 validation = true
                 values.each { | k, v | v ? mode = k : '' }
             else
-                messages.push( "- Type is not found. Use 'payload:hash/options:hash' or 'payload:json/options:hash' instead." )
+                messages.push( "- Type not found. Use 'payload:hash/options:hash' or 'payload:json/options:hash' instead." )
             end
         else
             messages.push( "- Body is empty. Use Route 'payload?payload=hash&options=hash' to generate a payload first.")
@@ -114,5 +114,13 @@ module Helpers
         end
 
         return [ validation, mode, messages, hash ]
+    end
+
+
+    def self.error_output( messages )
+        result = messages
+            .join( "\n" )
+            .insert( 0, "Error#{messages.length == 1 ? '' : 's' }:\n" )
+        return result
     end
 end

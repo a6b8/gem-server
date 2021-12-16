@@ -70,7 +70,7 @@ class Invoice < Sinatra::Base
         if messages.length == 0 
             return struct
         else
-            return messages.join( "\n" ).insert( 0, "Error#{messages.length == 1 ? '' : 's' }:\n" )
+            return Helpers.error_output( messages )
         end
     end
       
@@ -88,15 +88,15 @@ class Invoice < Sinatra::Base
                 else
                     m = doc.map { | a | "- #{a}"}
                     messages.concat( m )
-                    return messages.join( "\n" ).insert( 0, "Error#{messages.length == 1 ? '' : 's'}:\n" )
+                    return Helpers.error_output( messages )
                 end
                 
             rescue
                 messages.push( '- Generating of document failed, internal error.' )
-                return messages.join( "\n" ).insert( 0, "Error#{messages.length == 1 ? '' : 's'}:\n" )
+                return Helpers.error_output( messages )
             end
         else
-            return messages.join( "\n" ).insert( 0, "Error#{messages.length == 1 ? '' : 's'}:\n" )
+            return Helpers.error_output( messages )
         end
     end
 end
