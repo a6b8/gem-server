@@ -14,22 +14,7 @@ class Invoice < Sinatra::Base
 
     def initialize
         super()
-        alphabet = ( 'a'..'z' ).to_a
-        @examples = Blocks.options
-            .select { | k, v | v[:examples].length > 0 }
-            .map { | k, v | v[:examples].map.with_index { | a, i |
-                a[:options][:show__unencrypted] = false
-                a[:url] = "https://docs.writeinvoice.com/options/#{k}"
-                a[:description] = "#{a[:description]} | This Example is randomly choosen, for more Information visit: #{a[:url]}#example-#{alphabet[ i ]}"
-                a
-            } }
-            .reject { | k, v | v.nil? }
-            .reject { | k, v | !v[:description].index( 'font' ).nil? }
-            .reject { | k, v | !v[:description].index( 'logo' ).nil? }
-            .flatten
-            .shuffle
-
-        puts "Examples: #{ @examples.length}"
+        @examples = Helpers.example_prepare()
         @index = 0
         @debug = false
     end
@@ -37,10 +22,15 @@ class Invoice < Sinatra::Base
 
     get '/payload' do
         content_type 'text/plain'
-        validation, mode, messages = Helpers.payload_validation( params )
+        mode, messages, item = Helpers.payload_validation( params )
 
-        if validation
-            payload = WriteInvoice::Example.generate( invoices_total: 2..2, debug: @debug )
+        if messages.length == 0
+            puts "Result: #{item}"
+            payload = WriteInvoice::Example.generate( 
+                articles_total: item[:articles_total],
+                invoices_total: item[:invoices_total],
+                debug: @debug )
+
             example = @examples[ @index ]
 
             struct = {
@@ -62,9 +52,7 @@ class Invoice < Sinatra::Base
             else
                 messages.push( '- Something went wrong!' )
             end
-        end
 
-        if messages.length == 0 
             return struct
         else
             return Helpers.error_output( messages )
@@ -74,25 +62,26 @@ class Invoice < Sinatra::Base
       
     post '/document' do
         str = request.body.read
-        validation, mode, messages, hash = Helpers.document_validation( str )
-
-        if validation
-            begin
-                doc = WriteInvoice::Document
-                    .generate( payload: hash[:payload], options: hash[:options], debug: @debug )
-                if !doc.class.eql? Array
-                    return doc
-                else
-                    m = doc.map { | a | "- #{a}"}
-                    messages.concat( m )
+        messages, hash = Helpers.document_validation( str )
+        if messages.length == 0
+            messages = Helpers.document_freeium( hash, messages )
+            if messages.length == 0
+                begin
+                    doc = WriteInvoice::Document
+                        .generate( payload: hash[:payload], options: hash[:options], debug: @debug )
+                    if !doc.class.eql? Array
+                        return doc
+                    else
+                        m = doc.map { | a | "- #{a}"}
+                        messages.concat( m )
+                        return Helpers.error_output( messages )
+                    end
+                rescue
+                    messages.push( '- Generating of document failed, internal error.' )
                     return Helpers.error_output( messages )
                 end
-                
-            rescue
-                messages.push( '- Generating of document failed, internal error.' )
                 return Helpers.error_output( messages )
             end
-        else
             return Helpers.error_output( messages )
         end
     end

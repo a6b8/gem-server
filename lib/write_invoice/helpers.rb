@@ -1,14 +1,62 @@
 module Helpers
+    def self.example_prepare()
+        alphabet = ( 'a'..'z' ).to_a
+        result = Blocks.options
+            .select { | k, v | v[:examples].length > 0 }
+            .map { | k, v | v[:examples].map.with_index { | a, i |
+                a[:options][:show__unencrypted] = false
+                a[:url] = "https://docs.writeinvoice.com/options/#{k}"
+                a[:description] = "#{a[:description]} | This Example is randomly choosen, for more Information visit: #{a[:url]}#example-#{alphabet[ i ]}"
+                a
+            } }
+            .reject { | k, v | v.nil? }
+            .reject { | k, v | !v[:description].index( 'font' ).nil? }
+            .reject { | k, v | !v[:description].index( 'logo' ).nil? }
+            .flatten
+            .shuffle
+        return result
+    end
+
+
     def self.payload_validation( params )
         messages = []
-        validation = true
-        message = ''
         mode = nil
+        item = {
+            articles_total: 1..1,
+            invoices_total: 1..1
+        }
 
         if params.keys.length == 0
             mode = 'payload:hash/options:hash'
-            validation = true
         else
+
+            k = params.keys
+            [ 'articles_total', 'invoices_total' ].each do | key |
+                if k.include?( key )
+                    puts 'HERE'
+                    begin
+                        n = Integer( params[ key ] )
+                        case key
+                        when 'articles_total'
+                            if !n.between?( 1, 100 )
+                                messages.push( "- #{key}: is not in between 1 and 100" )
+                            end
+                        when 'invoices_total'
+                            if !n.between?( 1, 10 )
+                                messages.push( "- #{key}: is not in between 1 and 10" )
+                            end
+                        else
+                            messages.push( "- #{key}: Internal Error")
+                        end
+
+                        item[ key.to_sym ] = ( n..n )
+                    rescue
+                        messages.push( "- #{key}: is not type 'Integer'." )
+                    end
+                end
+            end
+
+
             keys = [ 'payload', 'options' ]
             values = [ 'hash', 'json' ]
 
@@ -24,11 +72,10 @@ module Helpers
                 if ( [ 'payload:hash/options:hash', 'payload:json/options:hash' ] & [ tmp ] ) == [ tmp ]
                     mode = tmp
                 else
-                    validation = false
+
                     messages.push( "- #{tmp}: Your combination is not supported." )
                 end
             else
-                validation = false
 
                 keys.each do | key |
                     if params.keys.include?( key )
@@ -55,7 +102,7 @@ module Helpers
             end
         end
 
-        return [ validation, mode, messages ]
+        return [ mode, messages, item ]
     end
 
 
@@ -113,7 +160,61 @@ module Helpers
             end
         end
 
-        return [ validation, mode, messages, hash ]
+        return [ messages, hash ]
+    end
+
+
+    def self.document_freeium( hash, messages )
+        if hash[:payload].keys.include?( :invoices )
+            case hash[:payload][:invoices].length
+            when 0
+                messages.push( "- No invoice found. Use Route 'payload?payload=hash&options=hash' to generate a payload first." )
+            when 1
+
+                if hash[:payload][:invoices][ 0 ].keys.include?( :items )
+                    if hash[:payload][:invoices][ 0 ][:items].keys.include?( :articles )
+                        if hash[:payload][:invoices][ 0 ][:items][:articles].length > 10
+                            messages.push( "- Not more then '10' articles are allowed. Use our premium services to upgrade your account." )
+                        end
+                    else
+                        messages.push( "- 'Articles' in 'Invoices > Items' not found." )
+                    end
+                else
+                    messages.push( "- 'Items' in 'Invoices' not found." )
+                end
+            else
+                messages.push( "- Only 'one' invoice per document is allowed. Use our premium services to upgrade your account." )
+            end
+        else
+            messages.push( "- Payload: ':invoices' not found. Use Route 'payload?payload=hash&options=hash' to generate a payload first.")
+        end
+
+        if hash[:options].class.eql?( Hash )
+            checks = {
+                show__unencrypted: false,
+                show__watermark: true,
+                text__watermark: 'Example',
+                style__watermark__font_size: 180
+            }
+
+            keys = hash[:options].keys
+            keys.concat( keys.map { | a | a.to_s } )
+
+            checks.each do | k, v |
+                if keys.include?( k ) or keys.include?( k.to_s )
+                    if !hash[:options][ k ].eql?( v )
+                        messages.push( "- #{k} can not be changed, set to '#{v}'. Use our premium services to upgrade your account." )
+                    end
+                end
+
+                hash[:options][ k ] = v
+            end
+        else
+            messages.push( "- hash[:options] is not type 'Hash'")
+        end
+        
+
+        return messages
     end
 
 
