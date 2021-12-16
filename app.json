@@ -1,0 +1,6 @@
+{
+    "name": "Rapid Api",
+    "description": "Write Invoice",
+    "repository": "https://github.com/a6b8/write-invoice-server",
+    "keywords": [ "ruby", "invoice", "sinatra" ]
+}
