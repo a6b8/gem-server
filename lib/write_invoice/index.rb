@@ -17,15 +17,30 @@ class Invoice < Sinatra::Base
         @examples = Helpers.example_prepare()
         @index = 0
         @debug = false
+
+        str = 'X-RapidAPI-Proxy-Secret'
+
+        if ENV.keys.include?( 'HTTP_X_RAPIDAPI_PROXY_SECRET' )
+            @proxy_secret = ENV[ 'HTTP_X_RAPIDAPI_PROXY_SECRET' ]
+        else
+            @proxy_secret = File
+                .read( './.env' )
+                .split( "\n" )
+                .map { | n | n.split( /=(.+)/ ) }
+                .to_h
+                .with_indifferent_access[ str ]
+        end
+
+        @header = 'HTTP_'.concat(  str .upcase.gsub!( '-', '_' ) )
     end
 
 
     get '/payload' do
         content_type 'text/plain'
         mode, messages, item = Helpers.payload_validation( params )
+        messages = Helpers.secret_validation( messages, request.env[@header], @proxy_secret )
 
         if messages.length == 0
-            puts "Result: #{item}"
             payload = WriteInvoice::Example.generate( 
                 articles_total: item[:articles_total],
                 invoices_total: item[:invoices_total],
@@ -55,6 +70,7 @@ class Invoice < Sinatra::Base
 
             return struct
         else
+            response.status = 404
             return Helpers.error_output( messages )
         end
     end
@@ -63,25 +79,34 @@ class Invoice < Sinatra::Base
     post '/document' do
         str = request.body.read
         messages, hash = Helpers.document_validation( str )
+        messages = Helpers.secret_validation( messages, request.env[@header], @proxy_secret )
+
         if messages.length == 0
             messages = Helpers.document_freeium( hash, messages )
             if messages.length == 0
                 begin
-                    doc = WriteInvoice::Document
-                        .generate( payload: hash[:payload], options: hash[:options], debug: @debug )
+                    doc = WriteInvoice::Document.generate( 
+                        payload: hash[:payload], 
+                        options: hash[:options], 
+                        debug: @debug 
+                    )
+
                     if !doc.class.eql? Array
                         return doc
                     else
-                        m = doc.map { | a | "- #{a}"}
-                        messages.concat( m )
-                        return Helpers.error_output( messages )
+                        ms = doc.map { | a | "- #{a}" }
+                        messages.concat( ms )
                     end
                 rescue
-                    messages.push( '- Generating of document failed, internal error.' )
-                    return Helpers.error_output( messages )
+                    messages.push( '- Processing of document failed, internal error.' )
                 end
-                return Helpers.error_output( messages )
             end
+        end
+
+        if messages.length == 0
+            return doc
+        else
+            response.status = 404
             return Helpers.error_output( messages )
         end
     end

@@ -18,6 +18,23 @@ module Helpers
     end
 
 
+    def self.secret_validation( messages, header, proxy_secret )
+        puts "HEADER: #{header}"
+        puts "PROXY: #{proxy_secret}"
+
+        if header.class.eql?( String )
+            if proxy_secret.eql?( header )
+            else
+                messages.push( '- XRAPSecret not identical.' )
+            end
+        else
+            messages.push( '- XRAPSecret not found.' )
+        end
+
+        return messages
+    end
+
+
     def self.payload_validation( params )
         messages = []
         mode = nil
@@ -25,7 +42,7 @@ module Helpers
             articles_total: 1..1,
             invoices_total: 1..1
         }
-
+    
         if params.keys.length == 0
             mode = 'payload:hash/options:hash'
         else
@@ -33,7 +50,6 @@ module Helpers
             k = params.keys
             [ 'articles_total', 'invoices_total' ].each do | key |
                 if k.include?( key )
-                    puts 'HERE'
                     begin
                         n = Integer( params[ key ] )
                         case key
@@ -221,7 +237,8 @@ module Helpers
     def self.error_output( messages )
         result = messages
             .join( "\n" )
-            .insert( 0, "Error#{messages.length == 1 ? '' : 's' }:\n" )
+            .insert( 0, "The following error#{messages.length == 1 ? '' : 's' } occurred:\n" )
+            .concat( "\n\nVisit: https://docs.writeinvoice.com for more Informations.")
         return result
     end
 end
