@@ -21,8 +21,12 @@ class Invoice < Sinatra::Base
         str = 'X-RapidAPI-Proxy-Secret'
 
         if ENV.keys.include?( 'HTTP_X_RAPIDAPI_PROXY_SECRET' )
+            puts 'Detect: Localhost'
             @proxy_secret = ENV[ 'HTTP_X_RAPIDAPI_PROXY_SECRET' ]
+            set :bind, '0.0.0.0'
+            set :port, '80'
         else
+            puts 'Detect: Localhost'
             @proxy_secret = File
                 .read( './.env' )
                 .split( "\n" )
