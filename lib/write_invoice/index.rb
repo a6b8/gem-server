@@ -79,9 +79,11 @@ class Invoice < Sinatra::Base
 
         case ENV[ 'XYZ_ENVIRONMENT']
         when 'production'
+            puts "DETECT: production"
             set :bind, '0.0.0.0'
             set :port, '80'
         when 'development'
+            puts "DETECT: development"
         end
 
         str = ENV['XYZ_RAPIDAPI_HEADER']
