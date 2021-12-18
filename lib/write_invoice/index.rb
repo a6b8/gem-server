@@ -31,7 +31,7 @@ class Invoice < Sinatra::Base
     def initialize()
         super()
 
-        @logo = Helper.logo( @config[:logo] )
+        
         @config = {
             logo: 'https://docs.writeinvoice.com/assets/images/logo-demo.png',
             plans: {
@@ -40,7 +40,7 @@ class Invoice < Sinatra::Base
                     invoices_total: 1,
                     checks: {
                         show__logo: true,
-                        headline__image__src: @logo,
+                        headline__image__src: nil,
                         show__unencrypted: false,
                         show__watermark: true,
                         text__watermark: 'Example',
@@ -52,7 +52,7 @@ class Invoice < Sinatra::Base
                     invoices_total: 10,
                     checks: {
                         show__logo: true,
-                        headline__image__src: @logo,
+                        headline__image__src: nil,
                         show__unencrypted: false,
                         show__watermark: true,
                         text__watermark: 'Example',
@@ -64,7 +64,7 @@ class Invoice < Sinatra::Base
                     invoices_total: 100,
                     checks: {
                         show__logo: true,
-                        headline__image__src: @logo,
+                        headline__image__src: nil,
                         show__unencrypted: false,
                         show__watermark: true,
                         text__watermark: 'Example',
@@ -74,21 +74,22 @@ class Invoice < Sinatra::Base
             }
         }
 
+        @logo = Helpers.logo( @config[:logo] )
+        [ :preview, :basic, :pro ].each { | key | @config[:plans][ key ][:checks][:headline__image__src] = @logo }
+        #puts @config.pretty_inspect
+
         @examples = Helpers.example()
         @index = 0
 
         case ENV[ 'XYZ_ENVIRONMENT']
         when 'production'
-            puts "DETECT: production"
             set :bind, '0.0.0.0'
             set :port, '80'
         when 'development'
-            puts "DETECT: development"
         end
 
         str = ENV['XYZ_RAPIDAPI_HEADER']
         @header = 'HTTP_'.concat( str.upcase.gsub!( '-', '_' ) )
-        puts @header
     end
 
 
@@ -128,7 +129,7 @@ class Invoice < Sinatra::Base
                 doc = WriteInvoice::Document.generate( 
                     payload: hash[:payload], 
                     options: hash[:options], 
-                    debug: false 
+                    debug: false
                 )
 
                 if !doc.class.eql? Array
@@ -137,7 +138,8 @@ class Invoice < Sinatra::Base
                     ms = doc.map { | a | "- #{a}" }
                     messages.concat( ms )
                 end
-            rescue
+            rescue => e
+                ENV['XYZ_ENVIRONMENT'].eql?( 'development' ) ? puts( e ) : ''
                 messages.push( '- Processing of document failed, internal error.' )
             end
         end
