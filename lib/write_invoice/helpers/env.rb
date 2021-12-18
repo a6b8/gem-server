@@ -57,7 +57,7 @@ module Env
         else
             messages.push( '- XRAPSecret not found.' )
         end
-
+ 
         return messages
     end
 
