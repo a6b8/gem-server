@@ -1,7 +1,7 @@
 module Env
     def self.environment( prefix ) 
         hash = {
-            detect: 'HTTP_X_RAPIDAPI_PROXY_SECRET',
+            detect: 'XYZ_RAPIDAPI_SECRET',
             production: 'production',
             development: 'development'
         }
