@@ -46,9 +46,11 @@ module Env
 
 
     def self.rapidapi( messages, prefix, token )
-        puts "TOKEN: #{token}"
+        puts "FROM HEADER: #{token}"
         if token.class.eql?( String )
-            if ENV[ self.env_key_format( prefix, 'rapidapi_secret' ) ].eql?( token )
+            s = ENV[ self.env_key_format( prefix, 'rapidapi_secret' ) ]
+            puts "FROM ENV: #{s}"
+            if s.eql?( token )
             else
                 messages.push( '- XRAPSecret not identical.' )
             end
