@@ -83,8 +83,8 @@ class Invoice < Sinatra::Base
 
         case ENV[ 'XYZ_ENVIRONMENT']
         when 'production'
-            set :bind, '0.0.0.0'
-            set :port, '80'
+            #set :bind, '0.0.0.0'
+            #set :port, '80'
         when 'development'
         end
 
