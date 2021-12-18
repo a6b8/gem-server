@@ -30,7 +30,6 @@ class Invoice < Sinatra::Base
 
     def initialize()
         super()
-
         
         @config = {
             logo: 'https://docs.writeinvoice.com/assets/images/logo-demo.png',
@@ -79,7 +78,7 @@ class Invoice < Sinatra::Base
         #puts @config.pretty_inspect
 
         @examples = Helpers.example()
-        @index = 0
+        @@index = 23
 
         case ENV[ 'XYZ_ENVIRONMENT']
         when 'production'
@@ -106,11 +105,14 @@ class Invoice < Sinatra::Base
         messages = Env.rapidapi( messages, 'XYZ_', request.env[ @header ] )
 
         if messages.empty?
-            struct, messages = Payload.generate( mode, messages, item, @examples[ @index ] )
+            puts "index: #{@index}"
+            struct, messages = Payload.generate( mode, messages, item, @examples[ @@index ] )
+            
         end
 
         if messages.empty?
-            @index == @examples.length - 1 ? @index = 0 : @index = @index + 1
+            puts 'OUTPUT'
+            ( @@index == @examples.length - 1 ) ? @@index = 0 : @@index = @@index + 1
             return struct
         else
             response.status = 404
